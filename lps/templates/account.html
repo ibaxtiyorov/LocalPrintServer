@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ t('account.title') }}{% endblock %}
+{% block main_class %}container narrow{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>{{ t('account.title') }}</h1>
+  <dl class="kv">
+    <dt>{{ t('login.username') }}</dt><dd>{{ user.username }}</dd>
+    <dt>{{ t('users.role') }}</dt><dd>{{ t('role.' ~ user.role) }}</dd>
+  </dl>
+  {% if force %}<div class="alert alert-warn">{{ t('account.must_change') }}</div>{% endif %}
+  {% if msg %}<div class="alert alert-ok">{{ t(msg) }}</div>{% endif %}
+  {% if err %}<div class="alert alert-error" role="alert">{{ t(err) }}</div>{% endif %}
+  <h2>{{ t('account.change_password') }}</h2>
+  <form method="post" autocomplete="off">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>{{ t('account.current_password') }}<input type="password" name="current_password" required maxlength="256" autocomplete="current-password"></label>
+    <label>{{ t('account.new_password') }}<input type="password" name="new_password" required minlength="10" maxlength="256" autocomplete="new-password"></label>
+    <label>{{ t('account.repeat_password') }}<input type="password" name="new_password2" required minlength="10" maxlength="256" autocomplete="new-password"></label>
+    <p class="muted small">{{ t('account.password_rules') }}</p>
+    <button class="btn btn-primary" type="submit">{{ t('account.save_password') }}</button>
+  </form>
+</section>
+{% endblock %}

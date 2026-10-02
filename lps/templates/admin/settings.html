@@ -1,0 +1,89 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ t('admin.nav.settings') }}{% endblock %}
+{% block page_id %}admin-settings{% endblock %}
+{% macro err(key) %}{% if errors.get(key) %}<p class="field-error">{{ errors[key] }}</p>{% endif %}{% endmacro %}
+{% macro num(key, step=1) %}
+<label>{{ t('set.' ~ key) }}
+  <input type="number" name="{{ key }}" value="{{ values[key] }}" step="{{ step }}">
+</label>{{ err(key) }}
+{% endmacro %}
+{% macro sel(key, options, prefix) %}
+<label>{{ t('set.' ~ key) }}
+  <select name="{{ key }}">
+    {% for o in options %}<option value="{{ o }}" {% if values[key] == o %}selected{% endif %}>{{ t(prefix ~ o) if prefix else o }}</option>{% endfor %}
+  </select>
+</label>{{ err(key) }}
+{% endmacro %}
+{% macro chk(key) %}
+<label class="check"><input type="checkbox" name="{{ key }}" {% if values[key] %}checked{% endif %}> {{ t('set.' ~ key) }}</label>{{ err(key) }}
+{% endmacro %}
+{% block admin_content %}
+<form method="post" class="settings-page">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="grid-2">
+    <section class="card">
+      <h2>{{ t('set.group.print') }}</h2>
+      <label>{{ t('set.default_paper') }}
+        <select name="default_paper">{% for p in catalog.PAPER_SIZES %}<option value="{{ p.key }}" {% if values.default_paper == p.key %}selected{% endif %}>{{ p.label }}</option>{% endfor %}</select>
+      </label>
+      {{ sel('default_media', catalog.MEDIA_BY_KEY.keys()|list, 'media.') }}
+      {{ sel('default_quality', catalog.QUALITY_ORDER, 'quality.') }}
+      {{ sel('default_color', ['COLOR', 'MONO'], 'color.') }}
+      {{ sel('default_orientation', catalog.ORIENTATION_CHOICES, 'orientation.') }}
+      {{ sel('default_scaling', catalog.SCALING_CHOICES, 'scaling.') }}
+      {{ num('default_margins_mm', 0.5) }}
+      {{ num('max_copies') }}
+      {{ num('nup_gap_mm', 0.5) }}
+      {{ num('pdf_render_dpi') }}
+      <p class="muted small">{{ t('set.pdf_render_dpi_note') }}</p>
+      {{ num('default_image_dpi') }}
+      <p class="muted small">{{ t('set.default_image_dpi_note') }}</p>
+    </section>
+    <section class="card">
+      <h2>{{ t('set.group.driver') }}</h2>
+      {{ sel('copies_mode', ['DRIVER', 'APPLICATION'], 'set.copies_mode.') }}
+      <p class="muted small">{{ t('set.copies_mode_note') }}</p>
+      {{ chk('devmode_merge') }}
+      <p class="muted small">{{ t('set.devmode_merge_note') }}</p>
+      {{ chk('borderless_enabled') }}
+      <p class="muted small">{{ t('set.borderless_note') }}</p>
+
+      <h2>{{ t('set.group.uploads') }}</h2>
+      {{ num('max_upload_mb') }}
+      {{ num('max_documents_per_job') }}
+      {{ num('max_pdf_pages') }}
+      {{ num('upload_ttl_minutes') }}
+      <fieldset><legend>{{ t('set.allowed_types') }}</legend>
+        <div class="checks">
+          {% for ft in file_types %}<label class="check"><input type="checkbox" name="allowed_types" value="{{ ft }}" {% if ft in values.allowed_types %}checked{% endif %}> {{ ft|upper }}</label>{% endfor %}
+        </div>
+      </fieldset>{{ err('allowed_types') }}
+    </section>
+    <section class="card">
+      <h2>{{ t('set.group.access') }}</h2>
+      {{ sel('user_login_mode', login_modes, 'set.login_mode.') }}
+      <p class="muted small">{{ t('set.user_login_mode_note') }}</p>
+      {{ num('max_active_jobs_per_user') }}
+      <h2>{{ t('set.group.queue') }}</h2>
+      {{ num('stall_seconds') }}
+      {{ num('spooler_retry_minutes') }}
+      {{ num('max_inflight_spooler_jobs') }}
+      <p class="muted small">{{ t('set.inflight_note') }}</p>
+    </section>
+    <section class="card">
+      <h2>{{ t('set.group.retention') }}</h2>
+      {{ num('job_retention_days') }}
+      {{ num('audit_retention_days') }}
+      {{ sel('log_level', log_levels, '') }}
+      <h2>{{ t('set.group.server') }}</h2>
+      <p class="muted small">{{ t('set.server_note') }}</p>
+      <dl class="kv small">
+        <dt>host</dt><dd>{{ cfg.host }}</dd><dt>port</dt><dd>{{ cfg.port }}</dd>
+        <dt>printer_name</dt><dd>{{ cfg.printer_name }}</dd><dt>printer_backend</dt><dd>{{ cfg.printer_backend }}</dd>
+        <dt>session_cookie_secure</dt><dd>{{ cfg.session_cookie_secure }}</dd><dt>session_hours</dt><dd>{{ cfg.session_hours }}</dd>
+      </dl>
+    </section>
+  </div>
+  <div class="sticky-actions"><button class="btn btn-primary btn-lg" type="submit">{{ t('common.save') }}</button></div>
+</form>
+{% endblock %}

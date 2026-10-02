@@ -1,0 +1,50 @@
+{% extends "admin/base.html" %}
+{% from "_macros.html" import badge, ts, job_settings, job_files, job_user, pager, job_filters with context %}
+{% block title %}{{ t('admin.nav.jobs') }}{% endblock %}
+{% block page_id %}admin-jobs{% endblock %}
+{% block admin_content %}
+<section class="card">
+  <div class="card-head">
+    <h1>{{ t('admin.nav.jobs') }}</h1>
+    <div class="btn-row">
+      <span class="muted">{{ t('common.total', n=total) }}</span>
+      <button class="btn btn-sm btn-danger" type="button" data-action="jobs/cancel-all" data-confirm="{{ t('admin.confirm_cancel_all') }}" data-reload>{{ t('admin.cancel_all') }}</button>
+    </div>
+  </div>
+  {{ job_filters(args, states, 'admin.jobs_page', with_user=True) }}
+  {% if jobs %}
+  <div class="table-wrap">
+    <table class="table jobs-table">
+      <thead><tr>
+        <th>{{ t('jobs.created') }}</th><th>{{ t('jobs.user') }}</th><th>{{ t('jobs.file') }}</th><th>{{ t('jobs.status') }}</th><th>{{ t('jobs.windows_id') }}</th><th>{{ t('jobs.timeline') }}</th><th></th>
+      </tr></thead>
+      <tbody>
+      {% for j in jobs %}
+      <tr>
+        <td data-label="{{ t('jobs.created') }}">{{ ts(j.created_at) }}<div class="muted small mono">#{{ j.id }}</div></td>
+        <td data-label="{{ t('jobs.user') }}">{{ job_user(j) }}<div class="muted small">{{ j.client_ip or '' }}</div></td>
+        <td data-label="{{ t('jobs.file') }}">{{ job_files(j) }}{{ job_settings(j) }}</td>
+        <td data-label="{{ t('jobs.status') }}">{{ badge(j.status) }}
+          {% if j.status_detail %}<div class="muted small">{{ j.status_detail }}</div>{% endif %}
+          {% if j.error_code %}<div class="small err-text">{{ t(j.error_code) }}</div>{% endif %}
+          {% if j.error_message %}<div class="small mono muted break">{{ j.error_message }}</div>{% endif %}
+        </td>
+        <td data-label="{{ t('jobs.windows_id') }}">{{ j.spooler_job_id or '—' }}</td>
+        <td data-label="{{ t('jobs.timeline') }}" class="small">
+          {% if j.queued_at %}<div>{{ t('jobs.t_queued') }}: {{ ts(j.queued_at) }}</div>{% endif %}
+          {% if j.submitted_at %}<div>{{ t('jobs.t_submitted') }}: {{ ts(j.submitted_at) }}</div>{% endif %}
+          {% if j.printing_started_at %}<div>{{ t('jobs.t_printing') }}: {{ ts(j.printing_started_at) }}</div>{% endif %}
+          {% if j.finished_at %}<div>{{ t('jobs.t_finished') }}: {{ ts(j.finished_at) }}</div>{% endif %}
+        </td>
+        <td>{% if j.status in active_states and not j.cancel_requested %}
+          <button class="btn btn-sm btn-danger" type="button" data-action="jobs/{{ j.id }}/cancel" data-confirm="{{ t('jobs.confirm_cancel') }}" data-reload>{{ t('jobs.cancel') }}</button>
+        {% endif %}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ pager(page, per, total, args, 'admin.jobs_page') }}
+  {% else %}<p class="muted">{{ t('history.empty') }}</p>{% endif %}
+</section>
+{% endblock %}

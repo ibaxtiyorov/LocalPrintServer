@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block main_class %}container wide{% endblock %}
+{% block content %}
+<nav class="subnav" aria-label="{{ t('nav.admin') }}">
+  {% for ep, key in [('admin.dashboard','admin.nav.dashboard'), ('admin.jobs_page','admin.nav.jobs'), ('admin.printer_page','admin.nav.printer'), ('admin.users_page','admin.nav.users'), ('admin.settings_page','admin.nav.settings'), ('admin.logs_page','admin.nav.logs'), ('admin.audit_page','admin.nav.audit')] %}
+    <a href="{{ url_for(ep) }}" class="{% if request.endpoint == ep %}active{% endif %}">{{ t(key) }}</a>
+  {% endfor %}
+</nav>
+{% block admin_content %}{% endblock %}
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/admin.js') }}?v={{ version }}"></script>{% endblock %}

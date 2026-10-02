@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ t('login.title') }}{% endblock %}
+{% block main_class %}container narrow{% endblock %}
+{% block content %}
+{% set to_admin = (request.args.get('next') or '').startswith('/admin') %}
+{% if mode == 'USERNAME' and not to_admin %}
+<section class="card auth-card">
+  <h1>{{ t('login.name_title') }}</h1>
+  <p class="muted">{{ t('login.name_subtitle') }}</p>
+  {% if name_error %}<div class="alert alert-error" role="alert">{{ t(name_error) }}</div>{% endif %}
+  <form method="post" autocomplete="on">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="login_type" value="name">
+    <label>{{ t('login.print_name') }}
+      <input type="text" name="print_name" value="{{ print_name }}" required minlength="2" maxlength="40" autocomplete="name" autofocus>
+    </label>
+    <button class="btn btn-primary btn-block" type="submit">{{ t('login.name_submit') }}</button>
+  </form>
+</section>
+{% endif %}
+<section class="card {% if mode != 'USERNAME' or to_admin %}auth-card{% endif %}">
+  {% if mode == 'USERNAME' and not to_admin %}
+  <details {% if error %}open{% endif %}>
+    <summary><strong>{{ t('login.account_signin') }}</strong></summary>
+  {% else %}
+  <h1>{{ t('login.title') }}</h1>
+  <p class="muted">{{ t('login.subtitle') }}</p>
+  {% endif %}
+  {% if error %}<div class="alert alert-error" role="alert">{{ t(error[0], **error[1]) }}</div>{% endif %}
+  <form method="post" autocomplete="on">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>{{ t('login.username') }}
+      <input type="text" name="username" value="{{ username }}" required maxlength="64" autocomplete="username" autocapitalize="none" {% if mode != 'USERNAME' or to_admin %}autofocus{% endif %}>
+    </label>
+    <label>{{ t('login.password') }}
+      <input type="password" name="password" required maxlength="256" autocomplete="current-password">
+    </label>
+    <button class="btn btn-primary btn-block" type="submit">{{ t('login.submit') }}</button>
+  </form>
+  {% if mode == 'USERNAME' and not to_admin %}</details>{% endif %}
+</section>
+{% endblock %}

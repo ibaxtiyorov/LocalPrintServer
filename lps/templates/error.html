@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ t('error.title') }}{% endblock %}
+{% block main_class %}container narrow{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>{{ t('error.title') }} <span class="muted">({{ code }})</span></h1>
+  <p>{{ t(message_key) }}</p>
+  <p><a class="btn" href="{{ url_for('user.index') }}">{{ t('error.home') }}</a></p>
+</section>
+{% endblock %}

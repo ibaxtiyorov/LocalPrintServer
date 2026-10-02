@@ -1,0 +1,47 @@
+{% extends "admin/base.html" %}
+{% from "_macros.html" import ts, pager with context %}
+{% block title %}{{ t('admin.nav.audit') }}{% endblock %}
+{% block page_id %}admin-audit{% endblock %}
+{% block admin_content %}
+<section class="card">
+  <div class="card-head"><h1>{{ t('admin.nav.audit') }}</h1><span class="muted">{{ t('common.total', n=total) }}</span></div>
+  <form class="filters" method="get">
+    <label>{{ t('audit.actor') }}<input type="text" name="actor" value="{{ args.get('actor', '') }}" maxlength="64"></label>
+    <label>{{ t('audit.action') }}
+      <select name="action"><option value="">{{ t('common.all') }}</option>
+        {% for a in actions %}<option value="{{ a }}" {% if args.get('action') == a %}selected{% endif %}>{{ a }}</option>{% endfor %}
+      </select></label>
+    <label>{{ t('audit.result') }}
+      <select name="result"><option value="">{{ t('common.all') }}</option>
+        {% for r in ['OK', 'FAILED', 'DENIED', 'RATE_LIMITED', 'cancelled', 'cancelling', 'final'] %}<option value="{{ r }}" {% if args.get('result') == r %}selected{% endif %}>{{ r }}</option>{% endfor %}
+      </select></label>
+    <label>{{ t('common.search') }}<input type="search" name="q" value="{{ args.get('q', '') }}" maxlength="100"></label>
+    <label>{{ t('common.from') }}<input type="date" name="from" value="{{ args.get('from', '') }}"></label>
+    <label>{{ t('common.to') }}<input type="date" name="to" value="{{ args.get('to', '') }}"></label>
+    <div class="filter-actions">
+      <button class="btn btn-primary btn-sm" type="submit">{{ t('common.filter') }}</button>
+      <a class="btn btn-sm" href="{{ url_for('admin.audit_page') }}">{{ t('common.reset') }}</a>
+    </div>
+  </form>
+  <div class="table-wrap">
+    <table class="table small">
+      <thead><tr><th>{{ t('audit.time') }}</th><th>{{ t('audit.actor') }}</th><th>{{ t('audit.action') }}</th><th>{{ t('audit.target') }}</th><th>{{ t('audit.result') }}</th><th>{{ t('audit.details') }}</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td data-label="{{ t('audit.time') }}">{{ ts(r.ts) }}</td>
+          <td data-label="{{ t('audit.actor') }}">{{ r.actor }}<div class="muted">{{ r.actor_ip or '' }}</div></td>
+          <td data-label="{{ t('audit.action') }}"><code>{{ r.action }}</code></td>
+          <td data-label="{{ t('audit.target') }}" class="break">{{ r.target or '—' }}</td>
+          <td data-label="{{ t('audit.result') }}"><span class="badge {{ 'st-completed' if r.result in ('OK', 'cancelled', 'cancelling') else 'st-failed' }}">{{ r.result }}</span></td>
+          <td data-label="{{ t('audit.details') }}" class="mono break">{{ r.details or '' }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="muted">{{ t('common.none') }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ pager(page, per, total, args, 'admin.audit_page') }}
+</section>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% macro yesno(v) -%}
+{{ t('common.yes') if v else (t('common.no') if v == False else t('common.unknown')) }}
+{%- endmacro %}
+
+{% macro status_card(status) -%}
+<section class="card" data-admin-status>
+  <div class="card-head">
+    <h2>{{ t('admin.printer_state') }}</h2>
+    <button class="btn btn-sm" type="button" data-action="printer/refresh" data-reload>{{ t('admin.refresh') }}</button>
+  </div>
+  <div class="state-big state-{{ status.state|lower }}">{{ t('status.' ~ status.state) }}</div>
+  <ul class="reasons">
+    {% for r in status.reasons %}<li>{{ t(r) }}</li>{% endfor %}
+  </ul>
+  {% set ev = status.evidence %}
+  <h3>{{ t('admin.evidence') }}</h3>
+  <dl class="kv">
+    <dt>{{ t('admin.ev.spooler') }}</dt><dd>{{ yesno(ev.spooler_running) }}</dd>
+    <dt>{{ t('admin.ev.printer_found') }}</dt><dd>{{ yesno(ev.printer.exists) }}{% if ev.printer.error %} <span class="muted">({{ t(ev.printer.error) }})</span>{% endif %}</dd>
+    <dt>{{ t('admin.ev.win_status') }}</dt><dd><code>{{ ev.printer.status if ev.printer.status is defined else '—' }}</code> {% if ev.printer.status_flags %}{{ ev.printer.status_flags|join(', ') }}{% endif %}
+      <div class="muted small">{{ t('admin.ev.win_status_note') }}</div></dd>
+    <dt>{{ t('admin.ev.work_offline') }}</dt><dd>{{ yesno(ev.printer.work_offline) }}</dd>
+    <dt>{{ t('admin.ev.windows_jobs') }}</dt><dd>{{ ev.windows_jobs }}{% if ev.printer.cjobs is defined %} <span class="muted">(cJobs={{ ev.printer.cjobs }})</span>{% endif %}</dd>
+    <dt>{{ t('admin.ev.usb') }}</dt><dd>{{ yesno(ev.usb_present) }}
+      <div class="muted small">{{ t('admin.ev.usb_note') }}</div></dd>
+    <dt>{{ t('admin.ev.last_completed') }}</dt><dd>{% if ev.last_completed_at %}<time class="ts" datetime="{{ ev.last_completed_at }}">{{ ev.last_completed_at }}</time>{% else %}—{% endif %}</dd>
+    <dt>{{ t('admin.ev.app_queue') }}</dt><dd>{{ t('admin.paused') if status.queue.app_paused else t('admin.running') }} · {{ t('admin.active_jobs', n=status.queue.app_active) }}</dd>
+    <dt>{{ t('admin.ev.worker') }}</dt><dd>{% for n, alive in status.worker.threads.items() %}<span class="badge {{ 'st-completed' if alive else 'st-failed' }}">{{ n }}</span> {% endfor %}
+      {% if status.worker.current_job %}<span class="muted">· {{ t('admin.current_job') }} #{{ status.worker.current_job }}</span>{% endif %}</dd>
+  </dl>
+</section>
+{%- endmacro %}

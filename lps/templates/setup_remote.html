@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ t('setup.title') }}{% endblock %}
+{% block main_class %}container narrow{% endblock %}
+{% block content %}
+<section class="card auth-card">
+  <h1>{{ t('setup.title') }}</h1>
+  <div class="alert alert-warn">{{ t('setup.remote') }}</div>
+  <pre class="code">python manage.py create-admin</pre>
+</section>
+{% endblock %}

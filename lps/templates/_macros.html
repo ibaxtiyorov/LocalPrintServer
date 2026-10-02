@@ -1,0 +1,71 @@
+{% macro badge(status) -%}
+<span class="badge st-{{ status|lower }}">{{ t('state.' ~ status) }}</span>
+{%- endmacro %}
+
+{% macro ts(value) -%}
+{%- if value -%}<time class="ts" datetime="{{ value }}">{{ value[:16]|replace('T', ' ') }}</time>{%- else -%}—{%- endif -%}
+{%- endmacro %}
+
+{% macro job_files(j) -%}
+<ul class="file-parts">
+  {% for p in j.parts %}
+  <li><strong class="break">{{ p.filename }}</strong>
+    <span class="muted small">({{ (p.doc_type or '')|upper }}{% if p.page_count %}, {{ p.page_count }} p.{% endif %})</span>
+    <span class="small">· {{ t('opt.pages') }}: {% if p.page_range %}<span class="mono">{{ p.page_range }}</span>{% if p.selected %} ({{ p.selected }}){% endif %}{% else %}{{ t('hist.all_pages') }}{% endif %}</span>
+  </li>
+  {% endfor %}
+</ul>
+{%- endmacro %}
+
+{% macro job_user(j) -%}
+{{ j.username }}{% if (j.owner_key or '').startswith('name:') %} <span class="badge" title="{{ t('login.name_only_hint') }}">{{ t('hist.name_only') }}</span>{% elif (j.owner_key or '').startswith('guest:') %} <span class="badge">{{ t('hist.guest') }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro job_settings(j) -%}
+<span class="muted small">
+  {{ j.paper }} · {{ t('media.' ~ j.media) }} · {{ t('quality.' ~ j.quality) }} · {{ t('color.' ~ j.color) }} ·
+  {{ t('orientation.' ~ j.orientation) }} · {{ t('scaling.' ~ j.scaling) }}
+  {%- if j.margins_mm %} · {{ t('opt.margins') }} {{ j.margins_mm }} mm{% endif %}
+  · ×{{ j.copies }}{% if j.copies > 1 %} ({{ t('opt.collate') if j.collated else t('opt.uncollated') }}){% endif %}
+  {%- if j.reverse_order %} · {{ t('opt.reverse') }}{% endif %}
+  {%- if j.nup > 1 %} · {{ j.nup }}-up{% endif %}
+  {%- if j.borderless %} · {{ t('opt.borderless') }}{% endif %}
+  {%- if j.mirror %} · {{ t('opt.mirror') }}{% endif %}
+  {%- if j.rotate180 %} · {{ t('opt.rotate180') }}{% endif %}
+</span>
+{%- endmacro %}
+
+{% macro pager(page, per, total, args, endpoint) -%}
+{% set pages = ((total + per - 1) // per) if total else 1 %}
+{% if pages > 1 %}
+<nav class="pager">
+  {% set a = args.to_dict() %}
+  {% if page > 1 %}{% set _ = a.update({'page': page - 1}) %}<a class="btn btn-sm" href="{{ url_for(endpoint, **a) }}">‹ {{ t('common.prev') }}</a>{% endif %}
+  <span class="muted">{{ t('common.page_of', page=page, pages=pages) }}</span>
+  {% if page < pages %}{% set _ = a.update({'page': page + 1}) %}<a class="btn btn-sm" href="{{ url_for(endpoint, **a) }}">{{ t('common.next') }} ›</a>{% endif %}
+</nav>
+{% endif %}
+{%- endmacro %}
+
+{% macro job_filters(args, states, endpoint, with_user=False) -%}
+<form class="filters" method="get" action="{{ url_for(endpoint) }}">
+  {% if with_user %}
+  <label>{{ t('jobs.user') }}<input type="text" name="user" value="{{ args.get('user', '') }}" maxlength="64"></label>
+  {% endif %}
+  <label>{{ t('jobs.status') }}
+    <select name="status">
+      <option value="">{{ t('common.all') }}</option>
+      <option value="ACTIVE" {% if args.get('status') == 'ACTIVE' %}selected{% endif %}>{{ t('state.ACTIVE') }}</option>
+      {% for s in states %}<option value="{{ s }}" {% if args.get('status') == s %}selected{% endif %}>{{ t('state.' ~ s) }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>{{ t('jobs.filename') }}<input type="search" name="q" value="{{ args.get('q', '') }}" maxlength="100"></label>
+  <label>{{ t('jobs.job_id') }}<input type="text" name="job" value="{{ args.get('job', '') }}" maxlength="32"></label>
+  <label>{{ t('common.from') }}<input type="date" name="from" value="{{ args.get('from', '') }}"></label>
+  <label>{{ t('common.to') }}<input type="date" name="to" value="{{ args.get('to', '') }}"></label>
+  <div class="filter-actions">
+    <button class="btn btn-primary btn-sm" type="submit">{{ t('common.filter') }}</button>
+    <a class="btn btn-sm" href="{{ url_for(endpoint) }}">{{ t('common.reset') }}</a>
+  </div>
+</form>
+{%- endmacro %}

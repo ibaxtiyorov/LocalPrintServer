@@ -1,0 +1,170 @@
+{% extends "admin/base.html" %}
+{% from "admin/_status.html" import status_card, yesno with context %}
+{% block title %}{{ t('admin.nav.printer') }}{% endblock %}
+{% block page_id %}admin-printer{% endblock %}
+{% block admin_content %}
+<div class="grid-2">
+  {{ status_card(status) }}
+
+  <section class="card" id="maintenance">
+    <h2>{{ t('admin.nav.maintenance') }}</h2>
+    <h3>{{ t('maint.queue_controls') }}</h3>
+    <div class="btn-row">
+      {% if status.queue.app_paused %}
+        <button class="btn" type="button" data-action="queue/resume" data-reload>{{ t('admin.resume_app_queue') }}</button>
+      {% else %}
+        <button class="btn" type="button" data-action="queue/pause" data-reload>{{ t('admin.pause_app_queue') }}</button>
+      {% endif %}
+      <button class="btn" type="button" data-action="printer/pause" data-reload>{{ t('maint.pause_windows') }}</button>
+      <button class="btn" type="button" data-action="printer/resume" data-reload>{{ t('maint.resume_windows') }}</button>
+    </div>
+    <p class="muted small">{{ t('maint.pause_note') }}</p>
+    <h3>{{ t('maint.cancel_controls') }}</h3>
+    <div class="btn-row">
+      <button class="btn btn-danger" type="button" data-action="jobs/cancel-all" data-confirm="{{ t('admin.confirm_cancel_all') }}" data-reload>{{ t('admin.cancel_all') }}</button>
+      <button class="btn btn-danger" type="button" data-action="printer/purge" data-confirm="{{ t('maint.confirm_purge') }}" data-reload>{{ t('maint.purge_windows') }}</button>
+    </div>
+    <h3>{{ t('maint.spooler') }}</h3>
+    <div class="btn-row">
+      <button class="btn btn-warn" type="button" data-action="spooler/restart" data-confirm="{{ t('maint.confirm_spooler') }}" data-busy="{{ t('maint.restarting') }}" data-reload>{{ t('maint.restart_spooler') }}</button>
+    </div>
+    <p class="muted small">{{ t('maint.spooler_note') }}</p>
+    <h3>{{ t('maint.test_page') }}</h3>
+    <div class="btn-row">
+      <button class="btn" type="button" data-action="test-page" data-body='{"color": false}' data-confirm="{{ t('maint.confirm_test') }}">{{ t('maint.test_mono') }}</button>
+      <button class="btn" type="button" data-action="test-page" data-body='{"color": true}' data-confirm="{{ t('maint.confirm_test') }}">{{ t('maint.test_color') }}</button>
+    </div>
+    <p class="muted small">{{ t('maint.test_note') }}</p>
+    <h3>{{ t('maint.windows_dialogs') }}</h3>
+    {% if can_launch %}
+      <div class="btn-row">
+        <button class="btn" type="button" data-action="printer/properties">{{ t('maint.open_properties') }}</button>
+        <button class="btn" type="button" data-action="printer/preferences">{{ t('maint.open_preferences') }}</button>
+      </div>
+    {% else %}
+      <p class="small">{{ t('maint.dialogs_remote') }}</p>
+    {% endif %}
+    <p class="small">{{ t('maint.properties_cmd') }}</p>
+    <pre class="code" data-copy>{{ prop_cmd }}</pre>
+    <p class="small">{{ t('maint.preferences_cmd') }}</p>
+    <pre class="code" data-copy>{{ pref_cmd }}</pre>
+    <p class="muted small">{{ t('maint.preferences_note') }}</p>
+    {% if backend_kind == 'simulated' %}
+    <h3>{{ t('sim.controls') }}</h3>
+    <div class="btn-row">
+      <button class="btn" type="button" data-action="sim" data-body='{"usb": false}' data-reload>{{ t('sim.unplug') }}</button>
+      <button class="btn" type="button" data-action="sim" data-body='{"usb": true}' data-reload>{{ t('sim.plug') }}</button>
+      <button class="btn" type="button" data-action="sim" data-body='{"spooler": false}' data-reload>{{ t('sim.spooler_down') }}</button>
+      <button class="btn" type="button" data-action="sim" data-body='{"spooler": true}' data-reload>{{ t('sim.spooler_up') }}</button>
+    </div>
+    {% endif %}
+  </section>
+</div>
+
+<section class="card" id="queue" data-queue-panel>
+  <div class="card-head">
+    <h2>{{ t('maint.queue') }}</h2>
+    <span class="muted small" data-queue-updated></span>
+  </div>
+  <h3>{{ t('maint.app_queue') }}</h3>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>#</th><th>{{ t('jobs.user') }}</th><th>{{ t('jobs.file') }}</th><th>{{ t('jobs.status') }}</th><th>{{ t('jobs.windows_id') }}</th><th></th></tr></thead>
+    <tbody data-app-queue><tr><td colspan="6" class="muted">…</td></tr></tbody>
+  </table></div>
+  <h3>{{ t('maint.windows_queue') }}</h3>
+  <p class="muted small">{{ t('maint.windows_queue_note') }}</p>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>{{ t('jobs.windows_id') }}</th><th>{{ t('maint.document') }}</th><th>{{ t('maint.owner') }}</th><th>{{ t('jobs.status') }}</th><th>{{ t('jobs.pages') }}</th><th>{{ t('maint.position') }}</th><th></th></tr></thead>
+    <tbody data-win-queue><tr><td colspan="7" class="muted">…</td></tr></tbody>
+  </table></div>
+</section>
+
+<section class="card" id="driver-check" data-driver-check>
+  <div class="card-head">
+    <h2>{{ t('maint.driver_check') }}</h2>
+    <button class="btn btn-primary" type="button" data-run-driver-check>{{ t('maint.run_driver_check') }}</button>
+  </div>
+  <p class="muted small">{{ t('maint.driver_check_note') }}</p>
+  <div data-driver-check-result></div>
+</section>
+
+<section class="card" id="office" data-office-panel>
+  <div class="card-head">
+    <h2>{{ t('office.title') }}</h2>
+    <button class="btn" type="button" data-run-office-test>{{ t('office.test') }}</button>
+  </div>
+  <dl class="kv">
+    <dt>{{ t('office.setting') }}</dt><dd><code>{{ office.setting }}</code> <span class="muted small">(config.json: office_converter)</span></dd>
+    <dt>{{ t('office.word') }}</dt><dd>{% if office.word_engine %}<span class="badge st-completed">{{ t('office.engine.' ~ office.word_engine) }}</span>{% else %}<span class="badge st-failed">{{ t('office.unavailable') }}</span> {{ t(office.word_reason) }}{% endif %}</dd>
+    <dt>{{ t('office.excel') }}</dt><dd>{% if office.excel_engine %}<span class="badge st-completed">{{ t('office.engine.' ~ office.excel_engine) }}</span>{% else %}<span class="badge st-failed">{{ t('office.unavailable') }}</span> {{ t(office.excel_reason) }}{% endif %}</dd>
+    {% if office.msword_installed is not none %}<dt>Microsoft Word / Excel</dt><dd>{{ yesno(office.msword_installed) }} / {{ yesno(office.msexcel_installed) }}</dd>{% endif %}
+    <dt>LibreOffice</dt><dd class="break">{{ office.libreoffice_path or '—' }}</dd>
+    <dt>{{ t('office.timeout') }}</dt><dd>{{ office.timeout_seconds }} s</dd>
+  </dl>
+  {% if not office.word_engine or not office.excel_engine %}<div class="alert alert-warn">{{ t('office.admin_hint') }}</div>{% endif %}
+  {% if office.service_session and office.word_engine == 'msoffice' %}<p class="muted small">{{ t('office.service_note') }}</p>{% endif %}
+  <div data-office-result></div>
+</section>
+
+<div class="grid-2">
+  <section class="card">
+    <h2>{{ t('maint.printer_info') }}</h2>
+    {% if error %}
+      <div class="alert alert-error">{{ t(error) }}</div>
+    {% elif details %}
+      <dl class="kv">
+        <dt>{{ t('maint.name') }}</dt><dd>{{ details.pPrinterName }}</dd>
+        <dt>{{ t('maint.port') }}</dt><dd>{{ details.pPortName }}</dd>
+        <dt>{{ t('maint.driver') }}</dt><dd>{{ details.pDriverName }}</dd>
+        {% if details.pShareName %}<dt>{{ t('maint.share') }}</dt><dd>{{ details.pShareName }}</dd>{% endif %}
+        {% if details.pLocation %}<dt>{{ t('maint.location') }}</dt><dd>{{ details.pLocation }}</dd>{% endif %}
+        {% if details.pPrintProcessor %}<dt>{{ t('maint.processor') }}</dt><dd>{{ details.pPrintProcessor }} / {{ details.pDatatype }}</dd>{% endif %}
+        {% if details.Attributes is defined %}<dt>{{ t('maint.attributes') }}</dt><dd><code>0x{{ '%x'|format(details.Attributes) }}</code></dd>{% endif %}
+        <dt>{{ t('admin.ev.usb') }}</dt><dd>{{ yesno(details.usb_present) }}</dd>
+      </dl>
+      {% if details.driver_info %}
+      <h3>{{ t('maint.driver_info') }}</h3>
+      <dl class="kv small">
+        {% for k, v in details.driver_info.items() %}<dt>{{ k }}</dt><dd class="break">{{ v }}</dd>{% endfor %}
+      </dl>
+      {% endif %}
+      {% if details.default_devmode %}
+      <h3>{{ t('maint.default_devmode') }}</h3>
+      <dl class="kv small">
+        {% for k, v in details.default_devmode.items() %}<dt>{{ k }}</dt><dd>{{ v }}</dd>{% endfor %}
+      </dl>
+      <p class="muted small">{{ t('maint.devmode_note') }}</p>
+      {% endif %}
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2>{{ t('maint.paper_check') }}</h2>
+    <p class="muted small">{{ t('maint.paper_check_note') }}</p>
+    <div class="table-wrap"><table class="table small">
+      <thead><tr><th>{{ t('opt.paper') }}</th><th>PaperSize</th><th>{{ t('maint.advertised') }}</th><th>{{ t('maint.driver_name') }}</th><th>{{ t('opt.borderless') }}</th></tr></thead>
+      <tbody>
+      {% for p in paper_rows %}
+        <tr><td>{{ p.label }}</td><td>{{ p.dm }}</td>
+          <td>{% if p.advertised is none %}<span class="muted">?</span>{% elif p.advertised %}✔{% else %}<span class="err-text">✘</span>{% endif %}</td>
+          <td class="break">{{ p.driver_name or '—' }}</td>
+          <td>{{ p.borderless_id or '—' }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    <h3>{{ t('opt.media') }}</h3>
+    <ul class="plain-list small">
+      {% for m in media %}<li>{{ m.label }} — MediaType {{ m.dm_media }} ({{ m.native_dpi }} dpi)</li>{% endfor %}
+    </ul>
+  </section>
+</div>
+
+<section class="card">
+  <h2>{{ t('maint.diagnostics') }}</h2>
+  <dl class="kv small">
+    {% for k, v in diagnostics.items() %}
+      <dt>{{ k }}</dt><dd class="break">{% if v is mapping %}{% for a, b in v.items() %}{{ a }}={{ b }}{% if not loop.last %}, {% endif %}{% endfor %}{% else %}{{ v }}{% endif %}</dd>
+    {% endfor %}
+  </dl>
+</section>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "admin/base.html" %}
+{% from "admin/_status.html" import status_card with context %}
+{% from "_macros.html" import badge, ts with context %}
+{% block title %}{{ t('admin.nav.dashboard') }}{% endblock %}
+{% block page_id %}admin-dashboard{% endblock %}
+{% block admin_content %}
+<div class="grid-2">
+  {{ status_card(status) }}
+  <div>
+    <section class="card">
+      <h2>{{ t('admin.job_counts') }}</h2>
+      <div class="stat-grid">
+        {% for s in states %}
+          <a class="stat" href="{{ url_for('admin.jobs_page', status=s) }}"><span class="stat-n">{{ counts.get(s, 0) }}</span>{{ badge(s) }}</a>
+        {% endfor %}
+      </div>
+    </section>
+    <section class="card">
+      <h2>{{ t('admin.quick_actions') }}</h2>
+      <div class="btn-row">
+        {% if status.queue.app_paused %}
+          <button class="btn" type="button" data-action="queue/resume" data-reload>{{ t('admin.resume_app_queue') }}</button>
+        {% else %}
+          <button class="btn" type="button" data-action="queue/pause" data-reload>{{ t('admin.pause_app_queue') }}</button>
+        {% endif %}
+        <a class="btn" href="{{ url_for('admin.printer_page') }}#queue">{{ t('admin.view_queue') }}</a>
+        <a class="btn" href="{{ url_for('admin.printer_page') }}#maintenance">{{ t('admin.nav.maintenance') }}</a>
+      </div>
+    </section>
+    <section class="card">
+      <h2>{{ t('admin.recent_failures') }}</h2>
+      {% if recent_failed %}
+      <ul class="plain-list">
+        {% for j in recent_failed %}
+          <li>{{ ts(j.finished_at or j.created_at) }} · <strong class="break">{{ j.filename }}</strong> · {{ j.username }}<br>
+            <span class="err-text small">{{ t(j.error_code or 'err.internal') }}</span>
+            {% if j.error_message %}<span class="muted small mono">{{ j.error_message }}</span>{% endif %}</li>
+        {% endfor %}
+      </ul>
+      {% else %}<p class="muted">{{ t('common.none') }}</p>{% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

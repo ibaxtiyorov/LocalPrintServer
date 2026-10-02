@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="color-scheme" content="light dark">
+  <title>{% block title %}{{ t('app.name') }}{% endblock %} · {{ t('app.name') }}</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v={{ version }}">
+</head>
+<body data-lang="{{ lang }}" data-page="{% block page_id %}{% endblock %}">
+<script type="application/json" id="i18n-data">{{ js_translations()|tojson }}</script>
+<header class="topbar">
+  <a class="brand" href="{{ url_for('user.index') }}">
+    <svg class="brand-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z"/></svg>
+    <span>{{ t('app.name') }}</span>
+  </a>
+  <button class="nav-toggle" type="button" aria-label="{{ t('nav.menu') }}" aria-expanded="false" data-nav-toggle>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+  </button>
+  <nav class="nav" data-nav>
+    {% if can_print %}
+      <a href="{{ url_for('user.index') }}" class="{% if request.endpoint == 'user.index' %}active{% endif %}">{{ t('nav.print') }}</a>
+      <a href="{{ url_for('user.history') }}" class="{% if request.endpoint == 'user.history' %}active{% endif %}">{{ t('nav.history') }}</a>
+    {% endif %}
+    {% if is_admin %}
+      <a href="{{ url_for('admin.dashboard') }}" class="{% if request.blueprint == 'admin' %}active{% endif %}">{{ t('nav.admin') }}</a>
+    {% endif %}
+    <span class="nav-spacer"></span>
+    <span class="status-pill" data-status-pill hidden><span class="dot"></span><span data-status-text></span></span>
+    <span class="lang-switch">
+      {% for code, name in languages.items() %}
+        <a href="{{ url_for('auth.set_lang', code=code, next=request.full_path) }}" class="{% if code == lang %}active{% endif %}" title="{{ name }}">{{ code|upper }}</a>
+      {% endfor %}
+    </span>
+    {% if print_name %}
+      <span class="user-link" title="{{ t('login.name_only_hint') }}">{{ print_name }}</span>
+      <form method="post" action="{{ url_for('auth.logout') }}" class="inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="linklike">{{ t('nav.change_name') }}</button>
+      </form>
+    {% endif %}
+    {% if user %}
+      <a href="{{ url_for('user.account') }}" class="user-link" title="{{ t('nav.account') }}">{{ user.display_name or user.username }}</a>
+      <form method="post" action="{{ url_for('auth.logout') }}" class="inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="linklike">{{ t('nav.logout') }}</button>
+      </form>
+    {% elif request.endpoint != 'auth.login' and not print_name %}
+      <a href="{{ url_for('auth.login') }}">{{ t('nav.login') }}</a>
+    {% endif %}
+  </nav>
+</header>
+{% if backend_kind == 'simulated' %}<div class="sim-banner">{{ t('sim.banner') }}</div>{% endif %}
+<main class="{% block main_class %}container{% endblock %}">
+  {% with messages = get_flashed_messages() %}
+    {% for cat, key in messages %}
+      <div class="alert {{ 'alert-ok' if cat == 'ok' else 'alert-error' }}" role="status">{{ t(key) }}</div>
+    {% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+<div class="toast-host" data-toast-host aria-live="polite"></div>
+<script src="{{ url_for('static', filename='js/common.js') }}?v={{ version }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

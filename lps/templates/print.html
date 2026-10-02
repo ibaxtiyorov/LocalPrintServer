@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}{{ t('print.title') }}{% endblock %}
+{% block page_id %}print{% endblock %}
+{% block main_class %}container wide{% endblock %}
+{% block content %}
+<div class="status-banner" data-status-banner hidden></div>
+
+<div class="print-grid">
+  <div class="print-col">
+    <!-- 1. Documents -->
+    <section class="card">
+      <h2><span class="step">1</span>{{ t('print.step_upload') }}</h2>
+      <div class="dropzone" data-dropzone tabindex="0" role="button" aria-label="{{ t('print.choose_file') }}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0-4 4m4-4 4 4M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+        <p><strong>{{ t('print.drop_here') }}</strong></p>
+        <p class="muted small" data-accept-hint></p>
+        <p class="muted small" data-office-hint hidden></p>
+        <input type="file" data-file-input multiple hidden>
+      </div>
+      <ul class="upload-list" data-upload-list></ul>
+      <div class="alert alert-error" data-upload-error hidden role="alert"></div>
+      <ol class="doc-list" data-doc-list aria-label="{{ t('print.documents') }}"></ol>
+      <p class="muted small" data-doc-order-hint hidden>{{ t('print.order_hint') }}</p>
+      <p class="field-error" data-error-for="documents"></p>
+    </section>
+
+    <!-- 2. Settings -->
+    <section class="card" data-settings-card>
+      <h2><span class="step">2</span>{{ t('print.step_settings') }}</h2>
+      <div class="preset-bar">
+        <label for="f-preset" class="sr-only">{{ t('preset.label') }}</label>
+        <select id="f-preset" data-preset-select><option value="">{{ t('preset.choose') }}</option></select>
+        <button type="button" class="btn btn-sm" data-preset-save>{{ t('preset.save') }}</button>
+        <button type="button" class="btn btn-sm btn-danger" data-preset-delete hidden>{{ t('preset.delete') }}</button>
+      </div>
+      <form class="settings" data-settings-form novalidate>
+        <div class="field">
+          <label for="f-paper">{{ t('opt.paper') }}</label>
+          <select id="f-paper" name="paper" data-opt></select>
+          <div class="custom-size" data-custom-size hidden>
+            <label>{{ t('opt.width_mm') }}<input type="number" name="custom_w_mm" step="0.1" inputmode="decimal" data-opt></label>
+            <label>{{ t('opt.height_mm') }}<input type="number" name="custom_h_mm" step="0.1" inputmode="decimal" data-opt></label>
+            <p class="muted small" data-custom-hint></p>
+          </div>
+          <p class="field-error" data-error-for="paper custom"></p>
+        </div>
+        <div class="field">
+          <label for="f-media">{{ t('opt.media') }}</label>
+          <select id="f-media" name="media" data-opt></select>
+          <p class="field-error" data-error-for="media"></p>
+        </div>
+        <fieldset class="field">
+          <legend>{{ t('opt.quality') }}</legend>
+          <div class="seg" data-radio-group="quality"></div>
+        </fieldset>
+        <fieldset class="field">
+          <legend>{{ t('opt.color') }}</legend>
+          <div class="seg" data-radio-group="color"></div>
+        </fieldset>
+        <fieldset class="field">
+          <legend>{{ t('opt.orientation') }}</legend>
+          <div class="seg" data-radio-group="orientation"></div>
+        </fieldset>
+        <fieldset class="field">
+          <legend>{{ t('opt.scaling') }}</legend>
+          <div class="seg" data-radio-group="scaling"></div>
+          <p class="field-error" data-error-for="scaling"></p>
+        </fieldset>
+        <fieldset class="field">
+          <legend>{{ t('opt.nup') }}</legend>
+          <div class="seg" data-radio-group="nup"></div>
+          <p class="field-error" data-error-for="nup"></p>
+        </fieldset>
+        <div class="field-row">
+          <div class="field">
+            <label for="f-copies">{{ t('opt.copies') }}</label>
+            <input id="f-copies" type="number" name="copies" min="1" value="1" inputmode="numeric" data-opt>
+            <p class="field-error" data-error-for="copies"></p>
+          </div>
+          <div class="field">
+            <label for="f-margins">{{ t('opt.margins_mm') }}</label>
+            <input id="f-margins" type="number" name="margins_mm" min="0" max="50" step="0.5" value="0" inputmode="decimal" data-opt>
+            <p class="field-error" data-error-for="margins_mm"></p>
+          </div>
+        </div>
+        <div class="checks">
+          <label class="check"><input type="checkbox" name="collate" checked data-opt> {{ t('opt.collate') }}</label>
+          <label class="check"><input type="checkbox" name="reverse" data-opt> {{ t('opt.reverse') }}</label>
+          <label class="check"><input type="checkbox" name="mirror" data-opt> {{ t('opt.mirror') }}</label>
+          <label class="check"><input type="checkbox" name="rotate180" data-opt> {{ t('opt.rotate180') }}</label>
+          <label class="check" data-borderless-wrap hidden><input type="checkbox" name="borderless" data-opt> {{ t('opt.borderless') }}</label>
+        </div>
+        <p class="muted small" data-borderless-note hidden>{{ t('opt.borderless_note') }}</p>
+        <p class="field-error" data-error-for="borderless"></p>
+      </form>
+    </section>
+  </div>
+
+  <!-- 3. Preview & print -->
+  <div class="print-col">
+    <section class="card preview-card">
+      <h2><span class="step">3</span>{{ t('print.step_preview') }}</h2>
+      <div class="preview-stage" data-preview-stage>
+        <p class="muted" data-preview-empty>{{ t('print.preview_empty') }}</p>
+        <img alt="{{ t('print.preview_alt') }}" data-preview-img hidden>
+        <div class="spinner" data-preview-spinner hidden></div>
+      </div>
+      <div class="preview-nav" data-preview-nav hidden>
+        <button type="button" class="btn btn-sm" data-sheet-prev aria-label="{{ t('common.prev') }}">‹</button>
+        <span data-sheet-label></span>
+        <button type="button" class="btn btn-sm" data-sheet-next aria-label="{{ t('common.next') }}">›</button>
+      </div>
+      <ul class="preview-notes small" data-preview-notes></ul>
+      <details class="print-order" data-print-order hidden>
+        <summary class="small"><strong>{{ t('print.order_title') }}</strong> <span class="muted" data-order-summary></span></summary>
+        <ol class="order-list small" data-order-list></ol>
+      </details>
+      <p class="muted small">{{ t('print.preview_disclaimer') }}</p>
+      <div class="alert alert-error" data-print-error hidden role="alert"></div>
+      <button type="button" class="btn btn-primary btn-block btn-lg" data-print-btn disabled>
+        {{ t('print.print_button') }}
+      </button>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>{{ t('print.my_jobs') }}</h2>
+        <a class="small" href="{{ url_for('user.history') }}">{{ t('print.all_history') }} →</a>
+      </div>
+      <ul class="job-list" data-job-list>
+        <li class="muted" data-job-empty>{{ t('print.no_jobs') }}</li>
+      </ul>
+    </section>
+  </div>
+</div>
+
+<template id="doc-item-tpl">
+  <li class="doc-item" draggable="true">
+    <div class="doc-head">
+      <span class="drag-handle" aria-hidden="true" title="{{ t('print.drag') }}">⋮⋮</span>
+      <span class="doc-num" data-num></span>
+      <div class="doc-title">
+        <strong class="break" data-name></strong>
+        <div class="muted small" data-meta></div>
+        <div class="small" data-sel-summary></div>
+      </div>
+      <div class="doc-actions">
+        <button type="button" class="btn btn-sm" data-act="up" aria-label="{{ t('print.move_up') }}" title="{{ t('print.move_up') }}">↑</button>
+        <button type="button" class="btn btn-sm" data-act="down" aria-label="{{ t('print.move_down') }}" title="{{ t('print.move_down') }}">↓</button>
+        <button type="button" class="btn btn-sm btn-danger" data-act="remove" aria-label="{{ t('print.remove_file') }}" title="{{ t('print.remove_file') }}">✕</button>
+      </div>
+    </div>
+    <div class="doc-pages">
+      <button type="button" class="btn btn-sm" data-act="toggle-pages" aria-expanded="false">{{ t('pages.choose') }}</button>
+      <div class="page-panel" data-page-panel hidden>
+        <div class="page-tools">
+          <label class="range-field">{{ t('opt.page_range') }}
+            <input type="text" data-range maxlength="200" placeholder="{{ t('opt.page_range_ph') }}" autocomplete="off">
+          </label>
+          <div class="btn-row">
+            <button type="button" class="btn btn-sm" data-act="all">{{ t('pages.select_all') }}</button>
+            <button type="button" class="btn btn-sm" data-act="none">{{ t('pages.clear') }}</button>
+          </div>
+        </div>
+        <p class="field-error" data-range-error></p>
+        <div class="thumb-grid" data-thumbs role="group" aria-label="{{ t('pages.thumbs') }}"></div>
+      </div>
+    </div>
+  </li>
+</template>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/print.js') }}?v={{ version }}"></script>{% endblock %}

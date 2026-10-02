@@ -1,0 +1,8 @@
+# LocalPrintServer runtime dependencies (Python 3.13, Windows x64).
+# Flask, Pillow and pywin32 are already verified on the server; PyMuPDF and
+# waitress are new. Versions below are the ones the package was tested with.
+Flask>=3.1,<4
+Pillow>=11,<13
+pywin32>=306
+PyMuPDF>=1.24,<2
+waitress>=3.0,<4

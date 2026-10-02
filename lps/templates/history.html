@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "_macros.html" import badge, ts, job_settings, job_files, job_user, pager, job_filters with context %}
+{% block title %}{{ t('history.title') }}{% endblock %}
+{% block page_id %}history{% endblock %}
+{% block content %}
+<section class="card">
+  <div class="card-head">
+    <h1>{{ t('history.title') }}</h1>
+    <span class="muted">{{ t('common.total', n=total) }}</span>
+  </div>
+  {{ job_filters(args, states, 'user.history') }}
+  {% if jobs %}
+  <div class="table-wrap">
+    <table class="table jobs-table">
+      <thead><tr>
+        <th>{{ t('jobs.created') }}</th><th>{{ t('jobs.user') }}</th><th>{{ t('jobs.file') }}</th><th>{{ t('jobs.status') }}</th><th>{{ t('jobs.pages') }}</th><th></th>
+      </tr></thead>
+      <tbody>
+      {% for j in jobs %}
+        <tr data-job-row="{{ j.id }}">
+          <td data-label="{{ t('jobs.created') }}">{{ ts(j.created_at) }}<div class="muted small mono">#{{ j.id }}</div></td>
+          <td data-label="{{ t('jobs.user') }}">{{ job_user(j) }}</td>
+          <td data-label="{{ t('jobs.file') }}">{{ job_files(j) }}{{ job_settings(j) }}</td>
+          <td data-label="{{ t('jobs.status') }}">{{ badge(j.status) }}
+            {% if j.error_code %}<div class="small err-text">{{ t(j.error_code) }}</div>{% endif %}
+          </td>
+          <td data-label="{{ t('jobs.pages') }}">{{ j.sheet_count or '—' }} / {{ j.page_count }}</td>
+          <td>{% if j.status in active_states and not j.cancel_requested %}
+            <button class="btn btn-sm btn-danger" type="button" data-cancel-job="{{ j.id }}">{{ t('jobs.cancel') }}</button>
+          {% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ pager(page, per, total, args, 'user.history') }}
+  {% else %}
+  <p class="muted">{{ t('history.empty') }}</p>
+  {% endif %}
+</section>
+{% endblock %}

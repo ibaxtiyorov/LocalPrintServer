@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ t('setup.title') }}{% endblock %}
+{% block main_class %}container narrow{% endblock %}
+{% block content %}
+<section class="card auth-card">
+  <h1>{{ t('setup.title') }}</h1>
+  <p>{{ t('setup.intro') }}</p>
+  {% if error %}<div class="alert alert-error" role="alert">{{ t(error) }}</div>{% endif %}
+  <form method="post" autocomplete="off">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>{{ t('login.username') }}<input type="text" name="username" required maxlength="32" pattern="[A-Za-z0-9][A-Za-z0-9._\-]{2,31}" autocapitalize="none"></label>
+    <label>{{ t('users.display_name') }}<input type="text" name="display_name" maxlength="80"></label>
+    <label>{{ t('account.new_password') }}<input type="password" name="password" required minlength="10" maxlength="256" autocomplete="new-password"></label>
+    <label>{{ t('account.repeat_password') }}<input type="password" name="password2" required minlength="10" maxlength="256" autocomplete="new-password"></label>
+    <p class="muted small">{{ t('account.password_rules') }}</p>
+    <button class="btn btn-primary btn-block" type="submit">{{ t('setup.submit') }}</button>
+  </form>
+</section>
+{% endblock %}
