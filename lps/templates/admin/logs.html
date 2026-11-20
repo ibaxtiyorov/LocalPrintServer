@@ -1,0 +1,19 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ t('admin.nav.logs') }}{% endblock %}
+{% block page_id %}admin-logs{% endblock %}
+{% block admin_content %}
+<section class="card">
+  <div class="card-head"><h1>{{ t('admin.nav.logs') }}</h1><span class="muted small">{{ t('logs.showing', n=lines|length) }}</span></div>
+  <form class="filters" method="get">
+    <label>{{ t('logs.min_level') }}
+      <select name="level"><option value="">{{ t('common.all') }}</option>
+        {% for l in levels %}<option value="{{ l }}" {% if args.get('level') == l %}selected{% endif %}>{{ l }}</option>{% endfor %}
+      </select></label>
+    <label>{{ t('common.search') }}<input type="search" name="q" value="{{ args.get('q', '') }}" maxlength="100"></label>
+    <label>{{ t('logs.lines') }}<input type="number" name="n" value="{{ args.get('n', 500) }}" min="50" max="5000" step="50"></label>
+    <div class="filter-actions"><button class="btn btn-primary btn-sm" type="submit">{{ t('common.filter') }}</button></div>
+  </form>
+  <pre class="logview">{% for ln in lines|reverse %}<span class="{% if ' ERROR ' in ln or ' CRITICAL ' in ln %}log-error{% elif ' WARNING ' in ln %}log-warn{% endif %}">{{ ln }}</span>
+{% endfor %}</pre>
+</section>
+{% endblock %}

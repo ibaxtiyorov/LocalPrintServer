@@ -1,0 +1,89 @@
+{% extends "admin/base.html" %}
+{% from "_macros.html" import ts with context %}
+{% block title %}{{ t('admin.nav.devices') }}{% endblock %}
+{% block page_id %}admin-devices{% endblock %}
+{% block admin_content %}
+<div class="grid-2 grid-wide-left">
+  <section class="card">
+    <div class="card-head">
+      <h1>{{ t('admin.nav.devices') }}</h1>
+      <span class="muted">{{ t('common.total', n=devices|length) }}</span>
+    </div>
+    {% if devices %}
+    <div class="table-wrap">
+      <table class="table devices-table">
+        <thead><tr>
+          <th style="white-space: normal; word-break: break-word;">{{ t('devices.device_id') }}</th>
+          <th style="white-space: normal; word-break: break-word;">{{ t('devices.name') }}</th>
+          <th style="white-space: normal; word-break: break-word;">{{ t('devices.ip_history') }}</th>
+          <th style="white-space: normal; word-break: break-word;">{{ t('devices.last_seen') }}</th>
+          <th style="white-space: normal; word-break: break-word;">{{ t('users.actions') }}</th>
+        </tr></thead>
+        <tbody>
+        {% for device in devices %}
+          {% set d = device %}
+          <tr>
+            <td data-label="{{ t('devices.device_id') }}">
+              <span class="mono small">{{ d.device_id }}</span>
+              {% if d.user_agent %}<div class="muted small break">{{ d.user_agent[:80] }}</div>{% endif %}
+            </td>
+            <td data-label="{{ t('devices.name') }}">
+              <form method="post" action="{{ url_for('admin.device_action', device_id=d.device_id, action='rename') }}" class="inline-form" style="display: block; width: 100%; max-width: 350px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div style="display: flex; gap: 8px; align-items: center; width: 100%; max-width: 350px;">
+                  <input type="text" name="custom_name" value="{{ device.custom_name or device.last_known_name or '' }}" maxlength="40" placeholder="{{ t('devices.name_ph') }}" aria-label="{{ t('devices.name') }}" style="flex-grow: 1; min-width: 130px;">
+                  <button class="btn btn-sm" type="submit" style="flex-shrink: 0;">{{ t('common.save') }}</button>
+                </div>
+              </form>
+              {% if device.last_known_name %}<div style="font-size: 0.8rem; color: #888; margin-top: 4px;">Last printed as: <strong>{{ device.last_known_name }}</strong></div>{% endif %}
+            </td>
+            <td data-label="{{ t('devices.ip_history') }}">
+              <div class="mono small"><strong>{{ d.last_ip or '—' }}</strong></div>
+              {% if d.ip_history and d.ip_history|length > 1 %}
+                <div class="muted small mono">{{ d.ip_history[1:6]|join(', ') }}</div>
+              {% endif %}
+            </td>
+            <td data-label="{{ t('devices.last_seen') }}">
+              <div>{{ ts(d.last_seen_at) }}</div>
+              <div class="muted small">{{ t('devices.first_seen') }}: {{ ts(d.first_seen_at) }}</div>
+            </td>
+            <td data-label="{{ t('users.actions') }}">
+              <a class="btn btn-sm" href="{{ url_for('admin.jobs_page', filter_device=device.id) }}">{{ t('admin.nav.jobs') }}</a>
+              {% if device.id == current_admin_id %}
+              <button class="btn btn-sm btn-danger" type="button" disabled style="opacity: 0.5; cursor: not-allowed;">{{ t('preset.delete') }}</button>
+              {% else %}
+              <form method="post" action="{{ url_for('admin.device_action', device_id=d.device_id, action='delete') }}" class="inline-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-danger" type="submit">{{ t('preset.delete') }}</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="muted">{{ t('common.none') }}</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2>{{ t('devices.register') }}</h2>
+    <form method="post" action="{{ url_for('admin.device_create') }}" autocomplete="off">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>{{ t('devices.device_id') }}
+        <input type="text" name="device_id" maxlength="64" pattern="[A-Za-z0-9_\-]{8,64}" placeholder="{{ t('devices.device_id_ph') }}" autocapitalize="none">
+      </label>
+      <p class="muted small">{{ t('devices.device_id_hint') }}</p>
+      <label>{{ t('devices.name') }}
+        <input type="text" name="custom_name" maxlength="40" placeholder="{{ t('devices.name_ph') }}">
+      </label>
+      <label>{{ t('devices.last_ip') }}
+        <input type="text" name="last_ip" maxlength="64" placeholder="192.168.1.x">
+      </label>
+      <button class="btn btn-primary" type="submit">{{ t('devices.register') }}</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ t('admin.install_update') }}{% endblock %}
+{% block admin_content %}
+<section class="card">
+  <h1>{{ t('admin.install_update') }}</h1>
+  <p>{{ t('admin.updating_msg') }}</p>
+</section>
+<script>
+setTimeout(function () { window.location.href = "{{ url_for('admin.dashboard') }}"; }, 10000);
+</script>
+{% endblock %}

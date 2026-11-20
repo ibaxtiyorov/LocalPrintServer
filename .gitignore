@@ -1,0 +1,52 @@
+# Python virtual environments & caches
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Runtime data, logs, databases & uploads (NEVER commit)
+data/
+logs/
+*.log
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.db
+*.db-journal
+
+# Private configuration, secrets, keys & encrypted archives
+.env
+.env.*
+config.json
+config.json.bak
+config.json.*
+!config.example.json
+ops-config.json
+secret_key
+*.pem
+*.key
+*.pfx
+*.p12
+*.crt
+*.dpapi
+*.lpsenc
+
+# Backups & recovery directories
+backups/
+*_backups/
+LocalPrintServer_backups/
+*.bak
+*.orig
+
+# Offline wheels & local LibreOffice test/portable artifacts
+wheels/
+LibreOffice_Portable/
+lo_installer/
+lo_test_tmp/
+test_lo.docx

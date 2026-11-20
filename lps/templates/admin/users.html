@@ -1,0 +1,126 @@
+{% extends "admin/base.html" %}
+{% from "_macros.html" import ts with context %}
+{% block title %}{{ t('admin.nav.users') }}{% endblock %}
+{% block page_id %}admin-users{% endblock %}
+{% block admin_content %}
+<style>
+  .pw-reset[open] > summary { display: none; }
+  td:has(.pw-reset[open]) > .inline-form { display: none; }
+</style>
+<div class="grid-2 grid-wide-left">
+  <section class="card">
+    <h1>{{ t('admin.nav.users') }}</h1>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>{{ t('login.username') }}</th><th>{{ t('users.role') }}</th><th>{{ t('users.state') }}</th><th>{{ t('users.last_login') }}</th><th>{{ t('users.actions') }}</th></tr></thead>
+        <tbody>
+        {% for user in users %}
+          {% set u = user %}
+          {% set target_user = user %}
+          <tr>
+            <td data-label="{{ t('login.username') }}"><strong>{{ u.username }}</strong>{% if u.display_name %}<div class="muted small">{{ u.display_name }}</div>{% endif %}
+              {% if u.must_change_password %}<div class="small warn-text">{{ t('users.must_change') }}</div>{% endif %}</td>
+            <td data-label="{{ t('users.role') }}">
+              {% if user.username == 'admin' or user.id == current_user.id %}
+                <span class="badge text-muted">{{ t('role.' ~ user.role) }}</span>
+              {% else %}
+                <form method="post" action="{{ url_for('admin.user_action', uid=u.id, action='role') }}" class="inline-form">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <select name="role" aria-label="{{ t('users.role') }}">
+                    {% for r in role_order %}<option value="{{ r }}" {% if r == u.role %}selected{% endif %}>{{ t('role.' ~ r) }}</option>{% endfor %}
+                  </select>
+                  <button class="btn btn-sm" type="submit">{{ t('common.save') }}</button>
+                </form>
+              {% endif %}
+            </td>
+            <td data-label="{{ t('users.state') }}">
+              {% if u.is_active %}<span class="badge st-completed">{{ t('users.active') }}</span>{% else %}<span class="badge st-cancelled">{{ t('users.disabled') }}</span>{% endif %}
+            </td>
+            <td data-label="{{ t('users.last_login') }}">{{ ts(u.last_login_at) }}</td>
+            <td data-label="{{ t('users.actions') }}">
+              {% if user.username == 'admin' and current_user.username != 'admin' %}
+                <span class="badge text-muted">Protected</span>
+              {% elif user.id == current_user.id or user.username == 'admin' %}
+                <details class="pw-reset">
+                  <summary class="btn btn-sm">{{ t('users.reset_password') }}</summary>
+                  <form method="post" action="{{ url_for('admin.user_edit', user_id=user.id) }}" autocomplete="off">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <label class="small">{{ t('login.username') }}
+                      {% if target_user.username == 'admin' %}
+                      <input type="text" name="username" value="{{ target_user.username }}" maxlength="32" readonly class="text-muted">
+                      {% else %}
+                      <input type="text" name="username" value="{{ target_user.username }}" maxlength="32" pattern="[A-Za-z0-9][A-Za-z0-9._\-]{2,31}" autocapitalize="none">
+                      {% endif %}
+                    </label>
+                    <label class="small">{{ t('users.display_name') }}
+                      <input type="text" name="display_name" value="{{ target_user.display_name or '' }}" maxlength="80" placeholder="{{ t('users.display_name') }}">
+                    </label>
+                    <input type="password" name="password" minlength="10" maxlength="256" placeholder="{{ t('account.new_password') }}" autocomplete="new-password">
+                    <input type="password" name="password2" minlength="10" maxlength="256" placeholder="{{ t('account.repeat_password') }}" autocomplete="new-password">
+                    <label class="check small"><input type="checkbox" name="must_change" checked> {{ t('users.force_change') }}</label>
+                    <div style="display: flex; gap: 8px;">
+                      <button class="btn btn-sm btn-primary" type="submit">{{ t('common.save') }}</button>
+                      <button type="button" class="btn btn-sm btn-secondary muted" onclick="const d=this.closest('details');if(d)d.removeAttribute('open');const f=this.closest('form');if(f)f.reset();">{{ _('admin.cancel_update') }}</button>
+                    </div>
+                  </form>
+                </details>
+              {% else %}
+                <form method="post" action="{{ url_for('admin.user_action', uid=u.id, action='disable' if u.is_active else 'enable') }}" class="inline-form">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm {{ 'btn-danger' if u.is_active else '' }}" type="submit">{{ t('users.disable') if u.is_active else t('users.enable') }}</button>
+                </form>
+                <form method="post" action="{{ url_for('admin.user_delete', user_id=user.id) }}" class="inline-form">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm btn-danger" type="submit">{{ t('preset.delete') }}</button>
+                </form>
+                <details class="pw-reset">
+                  <summary class="btn btn-sm">{{ t('users.reset_password') }}</summary>
+                  <form method="post" action="{{ url_for('admin.user_edit', user_id=user.id) }}" autocomplete="off">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <label class="small">{{ t('login.username') }}
+                      {% if target_user.username == 'admin' %}
+                      <input type="text" name="username" value="{{ target_user.username }}" maxlength="32" readonly class="text-muted">
+                      {% else %}
+                      <input type="text" name="username" value="{{ target_user.username }}" maxlength="32" pattern="[A-Za-z0-9][A-Za-z0-9._\-]{2,31}" autocapitalize="none">
+                      {% endif %}
+                    </label>
+                    <label class="small">{{ t('users.display_name') }}
+                      <input type="text" name="display_name" value="{{ target_user.display_name or '' }}" maxlength="80" placeholder="{{ t('users.display_name') }}">
+                    </label>
+                    <input type="password" name="password" minlength="10" maxlength="256" placeholder="{{ t('account.new_password') }}" autocomplete="new-password">
+                    <input type="password" name="password2" minlength="10" maxlength="256" placeholder="{{ t('account.repeat_password') }}" autocomplete="new-password">
+                    <label class="check small"><input type="checkbox" name="must_change" checked> {{ t('users.force_change') }}</label>
+                    <div style="display: flex; gap: 8px;">
+                      <button class="btn btn-sm btn-primary" type="submit">{{ t('common.save') }}</button>
+                      <button type="button" class="btn btn-sm btn-secondary muted" onclick="const d=this.closest('details');if(d)d.removeAttribute('open');const f=this.closest('form');if(f)f.reset();">{{ _('admin.cancel_update') }}</button>
+                    </div>
+                  </form>
+                </details>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>{{ t('users.create') }}</h2>
+    <form method="post" action="{{ url_for('admin.user_create') }}" autocomplete="off">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>{{ t('login.username') }}<input type="text" name="username" required maxlength="32" pattern="[A-Za-z0-9][A-Za-z0-9._\-]{2,31}" autocapitalize="none"></label>
+      <p class="muted small">{{ t('users.username_rules') }}</p>
+      <label>{{ t('users.display_name') }}<input type="text" name="display_name" maxlength="80"></label>
+      <label>{{ t('users.role') }}
+        <select name="role">{% for r in role_order %}<option value="{{ r }}">{{ t('role.' ~ r) }}</option>{% endfor %}</select>
+      </label>
+      <label>{{ t('account.new_password') }}<input type="password" name="password" required minlength="10" maxlength="256" autocomplete="new-password"></label>
+      <label>{{ t('account.repeat_password') }}<input type="password" name="password2" required minlength="10" maxlength="256" autocomplete="new-password"></label>
+      <p class="muted small">{{ t('account.password_rules') }}</p>
+      <label class="check"><input type="checkbox" name="must_change" checked> {{ t('users.force_change') }}</label>
+      <button class="btn btn-primary" type="submit">{{ t('users.create') }}</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

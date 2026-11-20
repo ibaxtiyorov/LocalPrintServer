@@ -1,0 +1,45 @@
+name: Automated tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python-tests:
+    name: Python tests (simulated printer)
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pytest
+      - name: Run tests (simulated printer; no paper)
+        env:
+          LPS_BACKEND: simulated
+          LPS_OFFICE: simulated
+        run: python -m pytest -q
+
+  automation-tests:
+    name: PowerShell syntax and backup encryption
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Validate automation scripts and backup encryption
+        shell: powershell
+        run: ./tests/test_remote_ops.ps1

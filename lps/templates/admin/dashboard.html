@@ -1,0 +1,89 @@
+{% extends "admin/base.html" %}
+{% from "admin/_status.html" import status_card with context %}
+{% from "_macros.html" import badge, ts with context %}
+{% block title %}{{ t('admin.nav.dashboard') }}{% endblock %}
+{% block page_id %}admin-dashboard{% endblock %}
+{% block admin_content %}
+{% if update_available %}
+<div id="update-banner" class="alert alert-warn update-notification" role="alert" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+  <div><strong>{{ t('admin.update_ready') }}</strong></div>
+  <div class="btn-row" style="display: flex; align-items: center; gap: 0.5rem;">
+    <form method="post" action="{{ url_for('admin.trigger_update') }}" class="inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-primary btn-sm" type="submit">{{ t('admin.install_update') }}</button>
+    </form>
+    <form method="post" action="{{ url_for('admin.cancel_update') }}" class="inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-sm muted" type="submit">{{ _('admin.cancel_update') }}</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+<div class="grid-2">
+  {{ status_card(status) }}
+  <div>
+    <section class="card stat-card" id="system-health-card">
+      <h2>Состояние системы</h2>
+      <div class="stat-grid" id="health-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
+        <div class="stat">
+          <span class="stat-n" id="health-cpu">{{ health.cpu_percent if health is defined and health else '—' }}%</span>
+          <span class="badge st-printing">Загрузка ЦП</span>
+        </div>
+        <div class="stat">
+          <span class="stat-n" id="health-ram">{{ health.ram_percent if health is defined and health else '—' }}%</span>
+          <span class="badge st-queued">Память (RAM)</span>
+        </div>
+        <div class="stat">
+          <span class="stat-n" id="health-disk">{{ health.disk_free_gb if health is defined and health else '—' }} ГБ</span>
+          <span class="badge st-completed">Свободно на диске</span>
+        </div>
+      </div>
+    </section>
+    <section class="card stat-card">
+      <style>
+        .stat-grid .stat { min-width: 0; }
+        .stat-grid .badge, .stat-card .badge {
+          white-space: normal;
+          word-break: break-word;
+          overflow-wrap: anywhere;
+          max-width: 100%;
+          height: auto;
+          line-height: 1.2;
+          text-align: center;
+          padding: 4px 8px;
+        }
+      </style>
+      <h2>{{ t('admin.job_counts') }}</h2>
+      <div class="stat-grid" data-job-counts-grid>
+        {% for s in states %}
+          <a class="stat" href="{{ url_for('admin.jobs_page', status=s) }}"><span class="stat-n">{{ counts.get(s, 0) }}</span>{{ badge(s) }}</a>
+        {% endfor %}
+      </div>
+    </section>
+    <section class="card">
+      <h2>{{ t('admin.quick_actions') }}</h2>
+      <div class="btn-row">
+        {% if status.queue.app_paused %}
+          <button class="btn" type="button" data-action="queue/resume" data-reload>{{ t('admin.resume_app_queue') }}</button>
+        {% else %}
+          <button class="btn" type="button" data-action="queue/pause" data-reload>{{ t('admin.pause_app_queue') }}</button>
+        {% endif %}
+        <a class="btn" href="{{ url_for('admin.printer_page') }}#queue">{{ t('admin.view_queue') }}</a>
+        <a class="btn" href="{{ url_for('admin.printer_page') }}#maintenance">{{ t('admin.nav.maintenance') }}</a>
+      </div>
+    </section>
+    <section class="card">
+      <h2>{{ t('admin.recent_failures') }}</h2>
+      {% if recent_failed %}
+      <ul class="plain-list">
+        {% for j in recent_failed %}
+          <li>{{ ts(j.finished_at or j.created_at) }} · <strong class="break">{{ j.filename }}</strong> · {{ j.username }}<br>
+            <span class="err-text small">{{ t(j.error_code or 'err.internal') }}</span>
+            {% if j.error_message %}<span class="muted small mono">{{ j.error_message }}</span>{% endif %}</li>
+        {% endfor %}
+      </ul>
+      {% else %}<p class="muted">{{ t('common.none') }}</p>{% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

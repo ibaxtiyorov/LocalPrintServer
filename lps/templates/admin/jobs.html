@@ -1,0 +1,146 @@
+{% extends "admin/base.html" %}
+{% from "_macros.html" import badge, ts, job_settings, job_files, job_user, pager, job_filters with context %}
+{% block title %}{{ t('admin.nav.jobs') }}{% endblock %}
+{% block page_id %}admin-jobs{% endblock %}
+{% block admin_content %}
+<section class="card">
+  <div class="card-head">
+    <h1>{{ t('admin.nav.jobs') }}</h1>
+    <div class="btn-row">
+      <span class="muted">{{ t('common.total', n=total) }}</span>
+      <button class="btn btn-sm btn-danger" type="button" data-action="jobs/cancel-all" data-confirm="{{ t('admin.confirm_cancel_all') }}" data-reload>{{ t('admin.cancel_all') }}</button>
+    </div>
+  </div>
+  {{ job_filters(args, states, 'admin.jobs_page', with_user=True) }}
+  {% if jobs %}
+  <div class="table-wrap">
+    <table class="table jobs-table">
+      <thead><tr>
+        <th>{{ t('jobs.created') }}</th><th>{{ t('jobs.user') }}</th><th>{{ t('jobs.file') }}</th><th>{{ t('jobs.status') }}</th><th>{{ t('jobs.windows_id') }}</th><th>{{ t('jobs.timeline') }}</th><th></th>
+      </tr></thead>
+      <tbody>
+      {% for j in jobs %}
+      {% set job = j %}
+      <tr>
+        <td data-label="{{ t('jobs.created') }}">
+          {{ ts(j.created_at) }}
+          <div class="muted small mono">#{{ j.id }}</div>
+          {% if job.file_exists %}
+            <div class="job-thumb-gallery">
+              {% for part in j.parts %}
+                {% set download_url = url_for('api.job_raw_file', job_id=j.id, part_idx=loop.index0) %}
+                {% set ptype = 'pdf' if (part.doc_type or '')|lower in ('pdf', 'doc', 'docx', 'xls', 'xlsx') else ('image' if (part.doc_type or '') else j.preview_type) %}
+                {% if ptype == 'image' %}
+                  <img src="{{ download_url }}" alt="{{ part.filename or j.filename }}" style="cursor: pointer;" data-file-url="{{ download_url }}" data-file-type="image" class="job-preview-thumb" loading="lazy">
+                {% else %}
+                  <span class="badge st-printing job-preview-thumb" role="button" tabindex="0" style="max-width: 60px; border-radius: 4px; cursor: pointer; display: inline-block; text-align: center;" data-file-url="{{ download_url }}" data-file-type="pdf">PDF</span>
+                {% endif %}
+              {% endfor %}
+            </div>
+          {% endif %}
+        </td>
+        <td data-label="{{ t('jobs.user') }}">{{ job_user(j) }}<div class="muted small">{{ j.client_ip or '' }}{% if j.device_id %} · <span class="mono">{{ j.device_id[:8] }}</span>{% endif %}</div></td>
+        <td data-label="{{ t('jobs.file') }}">
+          {{ job_files(j) }}{{ job_settings(j) }}
+          {% if job.file_exists %}
+          {% else %}
+            <div class="small" style="margin-top: .25rem;"><span class="badge muted">{{ _('history.file_expired') }}</span></div>
+          {% endif %}
+        </td>
+        <td data-label="{{ t('jobs.status') }}">{{ badge(j.status) }}
+          {% if j.status_detail %}<div class="muted small">{{ j.status_detail }}</div>{% endif %}
+          {% if j.error_code %}<div class="small err-text">{{ t(j.error_code) }}</div>{% endif %}
+          {% if j.error_message %}<div class="small mono muted break">{{ j.error_message }}</div>{% endif %}
+        </td>
+        <td data-label="{{ t('jobs.windows_id') }}">{{ j.spooler_job_id or '—' }}</td>
+        <td data-label="{{ t('jobs.timeline') }}" class="small">
+          {% if j.queued_at %}<div>{{ t('jobs.t_queued') }}: {{ ts(j.queued_at) }}</div>{% endif %}
+          {% if j.submitted_at %}<div>{{ t('jobs.t_submitted') }}: {{ ts(j.submitted_at) }}</div>{% endif %}
+          {% if j.printing_started_at %}<div>{{ t('jobs.t_printing') }}: {{ ts(j.printing_started_at) }}</div>{% endif %}
+          {% if j.finished_at %}<div>{{ t('jobs.t_finished') }}: {{ ts(j.finished_at) }}</div>{% endif %}
+        </td>
+        <td>{% if j.status in ('ACTIVE', 'PRINTING', 'SPOOLING', 'SUBMITTED', 'QUEUED', 'RENDERING', 'WAITING', 'RECEIVED', 'VALIDATING') %}
+          <button class="btn btn-sm btn-danger" type="button" data-cancel-job-id="{{ j.id }}">Отменить</button>
+        {% elif j.status in ('COMPLETED', 'CANCELLED', 'CANCELED', 'FAILED', 'UNKNOWN') %}
+          <button class="btn btn-sm btn-primary text-nowrap" type="button" style="white-space: nowrap;" data-reprint-job-id="{{ j.id }}" {% if not job.file_exists %}disabled title="{{ _('history.file_expired') }}"{% endif %}>{{ _('Повторить') }}</button>
+        {% endif %}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ pager(page, per, total, args, 'admin.jobs_page') }}
+  {% else %}<p class="muted">{{ t('history.empty') }}</p>{% endif %}
+</section>
+
+<div id="lightbox-modal" aria-hidden="true" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; display: none; align-items: center; justify-content: center; overflow: hidden;">
+  <button type="button" id="lightbox-close" aria-label="Close" style="position: absolute; top: 20px; right: 30px; font-size: 2rem; color: white; cursor: pointer; background: none; border: 0; line-height: 1; z-index: 10000;">&times;</button>
+  <div id="lightbox-content" style="display: flex; align-items: center; justify-content: center; max-width: 92vw; max-height: 92vh;"></div>
+</div>
+
+<script>
+(function() {
+  var modal = document.getElementById('lightbox-modal');
+  var closeBtn = document.getElementById('lightbox-close');
+  var content = document.getElementById('lightbox-content');
+  if (!modal || !closeBtn || !content) return;
+
+  function openLightbox(url, type) {
+    content.innerHTML = '';
+    if (type === 'image') {
+      var img = document.createElement('img');
+      img.src = url;
+      img.alt = 'Preview';
+      img.style.cssText = 'max-height: 90vh; max-width: 90vw; transition: transform 0.1s; transform-origin: center center; border-radius: 6px; box-shadow: 0 8px 32px rgba(0,0,0,.5); user-select: none;';
+      var scale = 1;
+      img.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        var delta = e.deltaY < 0 ? 0.15 : -0.15;
+        scale = Math.min(8, Math.max(0.25, scale + delta));
+        img.style.transform = 'scale(' + scale.toFixed(2) + ')';
+      }, { passive: false });
+      content.appendChild(img);
+    } else if (type === 'pdf') {
+      var frame = document.createElement('iframe');
+      frame.src = url;
+      frame.title = 'Document Preview';
+      frame.style.cssText = 'width: 80vw; height: 80vh; border: none; background: white; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,.5);';
+      content.appendChild(frame);
+    }
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeLightbox() {
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+    var media = content.querySelectorAll('img, iframe, embed');
+    for (var i = 0; i < media.length; i++) {
+      media[i].removeAttribute('src');
+    }
+    content.innerHTML = '';
+  }
+
+  document.addEventListener('click', function(e) {
+    var trigger = e.target.closest ? e.target.closest('.job-preview-thumb') : null;
+    if (trigger) {
+      e.preventDefault();
+      openLightbox(trigger.getAttribute('data-file-url'), trigger.getAttribute('data-file-type'));
+      return;
+    }
+    if (e.target === modal || e.target === content || e.target === closeBtn) {
+      closeLightbox();
+    }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && modal.style.display === 'flex') {
+      closeLightbox();
+    } else if ((e.key === 'Enter' || e.key === ' ') && e.target && e.target.classList && e.target.classList.contains('job-preview-thumb')) {
+      e.preventDefault();
+      openLightbox(e.target.getAttribute('data-file-url'), e.target.getAttribute('data-file-type'));
+    }
+  });
+})();
+</script>
+{% endblock %}
